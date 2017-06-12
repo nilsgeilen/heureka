@@ -10,14 +10,22 @@ Heuristic * parseHeuristic (AAF&aaf, AttackRelation&ar, std::stringstream&source
   if (name == "+" || name == "-" || name == "*" || name == "/" || name == "^") {
     auto * a = parseHeuristic(aaf, ar, source),
       * b = parseHeuristic(aaf, ar, source);
-    if (b -> is_dynamic() || a -> is_const()) {
+  /*  if (b -> is_dynamic() || a -> is_const()) {
       auto * temp = a;
       a = b;
       b = temp;
-    }
-    if (b -> is_dynamic())
-      std::cerr << "Fail: cannot combine two dynamic heuristics"<<std::endl;
+    }*/
     a -> zip_in_place (b, name[0]);
+    if (b -> is_dynamic() && a -> is_dynamic())
+      std::cerr << "Fail: cannot combine two dynamic heuristics"<<std::endl;
+    else if (b -> is_dynamic()) {
+      auto * temp = a;
+      a = b;
+      b = temp;
+      const ConstHeuristic zero(0, ar.arg_cnt);
+      a -> zip_in_place(&zero, '*');
+      a -> zip_in_place(b, '+');
+    }
     delete b;
     return a;
   } else if (name == "scc") {
@@ -31,11 +39,17 @@ Heuristic * parseHeuristic (AAF&aaf, AttackRelation&ar, std::stringstream&source
     return new PathHeuristic{ar,1,1,0,0};
   } else if (name == "outdeg") {
     return new PathHeuristic{ar,0,0,1,1};
-  } else if (name == "dynindeg") {
+  } else if (name == "dynindeg" || name == "aggror") {
     int window_size;
     rational_t weight;
     if (source >> window_size >> weight)
       return new DynamicDegreeHeuristic {ar, window_size, weight};
+    else std::cerr << "Fail: Heuristic expects different params: " << name <<std::endl;
+  } else if (name == "dynoutdeg" || name == "defor") {
+    int window_size;
+    rational_t weight;
+    if (source >> window_size >> weight)
+      return new DefensorHeuristic {ar, window_size, weight};
     else std::cerr << "Fail: Heuristic expects different params: " << name <<std::endl;
   } else if (name == "path") {
    int in_depth, out_depth;
@@ -43,17 +57,26 @@ Heuristic * parseHeuristic (AAF&aaf, AttackRelation&ar, std::stringstream&source
    if (source >> in_depth >> in_alpha >> out_depth >> out_alpha)
      return new PathHeuristic{ar,in_depth , in_alpha , out_depth , out_alpha};
     else std::cerr << "Fail: Heuristic expects different params: " << name <<std::endl;
-  } else if (name == "eig") {
+  } else if (name == "extdegrat") {
+    return new ExtendedDegreeRatioHeuristic {ar};
+  }else if (name == "ceig") {
     return new EigenHeuristic {aaf, 10};
-  } else if (name == "exp") {
+  }else if (name == "cb") {
+    return new BetweennessHeuristic{ar};
+  }  else if (name == "exp") {
     return new DenseExponentialHeuristic {aaf};
+  } else if (name == "dynexp") {
+    int window_size;
+    if (source >> window_size)
+      return new DenseExponentialHeuristic {aaf, window_size};
+    else std::cerr << "Fail: Heuristic expects different params: " << name <<std::endl;
   } else if (name == "exps") {
     return  getExponentialHeuristic (aaf);
   } else {
     std::stringstream str (name);
     rational_t const_val;
     if (str >> const_val) {
-      return new ConstHeuristic(const_val);
+      return new ConstHeuristic(const_val, ar.arg_cnt);
     }
   }
   return nullptr;
@@ -103,7 +126,10 @@ void Heuristic::zip_in_place(const Heuristic* heuristic, char op) {
       }
       return;
     }
-  } else if (heuristic-> order.size() == 1) {
+  } else {
+    std::cerr << "Fail: Arithmetic Operation on Heuristics of Different Dimensions";
+  }
+  /*else if (heuristic-> order.size() == 1) {
     const rational_t c = heuristic -> order [0] .second;
     switch (op) {
     case '+':
@@ -134,7 +160,7 @@ void Heuristic::zip_in_place(const Heuristic* heuristic, char op) {
       }
       return;
     }
-  }
+  }*/
 }
 
 

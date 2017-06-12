@@ -44,17 +44,15 @@ using namespace labels;
 /**
  * An algorithm to enumerate complete extensions
  */
-class CompleteEnumerator {
+class CompleteEnumerator : HeuristicAlgorithm {
 
   const AttackRelation &ar;
   const int n;
 
 
-  int *pos_range, *neg_range, *agressor_cnt;
   bool *defended;
   std::stack<int> decisions_index, decisions_arg;
   int in_cnt = 0, defended_cnt = 0;
-  labelling_t labels;
 
   const bool preferred;
   bool poss_max = true;
@@ -115,7 +113,7 @@ public:
                   if (labels[attedatted] == OUT)
                     return false;
                   if (labels[attedatted] == BLANK)
-                    if (!set_in(attedatted, -1))
+                    if (!set_in(attedatted, indices::BACKTRACK))
                       return false;
                 }
               }
@@ -137,7 +135,7 @@ public:
     return true;
   }
 
-  bool set_out (arg_t arg, int index = -1) {
+  bool set_out (arg_t arg, int index = indices::BACKTRACK) {
     if (labels[arg] & BLANK) {
       labels[arg] = labels::OUT;
       decisions_index.push(index);
@@ -160,7 +158,7 @@ public:
         return false;
       }
       if (candidate_cnt ==1) {
-        if (!set_in(candidate, -1))
+        if (!set_in(candidate, indices::BACKTRACK))
           return false;
       }
     }
@@ -171,7 +169,7 @@ public:
 
     for (arg_t arg : GroundedSolver().find_ext(ar)) {
       if (labels[arg] == BLANK) {
-        if(!set_in(arg, -2))
+        if(!set_in(arg, indices::STOP))
           return;
       } else if (labels[arg] == OUT)
         return;
@@ -180,7 +178,7 @@ public:
     for (arg_t arg : ar.self_attacker_set()) {
       //no return statement, because of empty set
       if (labels[arg] == BLANK) {
-          if(!set_out(arg, -2));
+          if(!set_out(arg, indices::STOP));
       }
     }
 
@@ -209,7 +207,7 @@ public:
           break;
         }
       } else {
-        arg_t arg = heuristic.get(index, agressor_cnt);
+        arg_t arg = heuristic.get(index, *this);
         if (labels[arg] == BLANK) {
             if (!set_in(arg, index))
               goto backtrack;
@@ -224,7 +222,7 @@ backtrack:
       arg_t arg = decisions_arg.top();
       decisions_index.pop();
       decisions_arg.pop();
-      if (index == -2)
+      if (index == indices::STOP)
         break;
       if (labels[arg] == IN) {
         in_cnt --;
@@ -242,7 +240,7 @@ backtrack:
         }
       }
       labels[arg] = BLANK;
-      if (index == -1 || !set_out(arg)) {
+      if (index == indices::BACKTRACK || !set_out(arg)) {
         goto backtrack;
       }
     }

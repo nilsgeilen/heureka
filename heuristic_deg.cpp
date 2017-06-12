@@ -89,20 +89,50 @@ WeightedDegreeHeuristic::WeightedDegreeHeuristic (AttackRelation &ar):Heuristic(
 }
 
 DynamicDegreeHeuristic::DynamicDegreeHeuristic (AttackRelation &ar, int window_size, rational_t weight)
+  : window_size(window_size), weight(weight), Heuristic(true) {
+    for (int i = 0; i < ar.arg_cnt; i++)
+      order.push_back(std::pair<int,rational_t>(i, 0.0));
+}
+
+int DynamicDegreeHeuristic::get(int from, const HeuristicAlgorithm &algo) {
+  const int * const adjusted_indegree = algo.get_aggressor_cnt();
+  arg_t max_pos = from;
+  rational_t max_val = order[from].second +weight * (rational_t)adjusted_indegree[from];
+  const int window_end = from + window_size;
+  for (int i = from + 1; i < order.size() && i < window_end; i++) {
+    const rational_t val = order[i].second +weight * (rational_t)adjusted_indegree[i];
+    if (val > max_val) {
+      max_pos = i;
+      max_val = val;
+    }
+  }
+  auto temp = order[from];
+  order[from] = order[max_pos];
+  order[max_pos] = temp;
+
+  return order[from].first;
+}
+
+
+DefensorHeuristic::DefensorHeuristic (AttackRelation &ar, int window_size, rational_t weight)
   : ar(ar), window_size(window_size), weight(weight), Heuristic(true) {
     for (int i = 0; i < ar.arg_cnt; i++)
       order.push_back(std::pair<int,rational_t>(i, 0.0));
 }
 
-int DynamicDegreeHeuristic::get(int from, const degree_counter_t * const adjusted_indegree) {
-  if (adjusted_indegree == nullptr)
-    return order[from].first;
+int DefensorHeuristic::get(int from, const HeuristicAlgorithm &algo) {
+  const int * const neg_range = algo.get_neg_range();
+  const int * const pos_range = algo.get_pos_range();
 
   arg_t max_pos = from;
-  rational_t max_val = order[from].second +weight * (rational_t)adjusted_indegree[from];
+  rational_t max_val = 0.0;
   const int window_end = from + window_size;
-  for (int i = from + 1; i < order.size() && i < window_end; i++) {
-    const float val = order[i].second +weight * (rational_t)adjusted_indegree[i];
+  for (int i = from; i < order.size() && i < window_end; i++) {
+    rational_t val = order[i].second;
+    for (arg_t a : ar.attacked_set(i)) {
+      if (neg_range[a] && !pos_range[a])
+        val += weight;
+    }
     if (val > max_val) {
       max_pos = i;
       max_val = val;

@@ -8,12 +8,18 @@ namespace {
   typedef std::vector<label_t> labelling_t;
 
   namespace labels {
-  constexpr label_t
+    constexpr label_t
       BLANK = 0x1,
       IN=0x2,
       UNDEC=BLANK,
-      OUT=0x4
-    ;
+      OUT=0x8;
+  }
+
+  /**
+   * Special indices used to mark operations in backtracking algorithms
+   */
+  namespace indices {
+    constexpr int STOP = -2, BACKTRACK = -1;
   }
 }
 

@@ -11,13 +11,11 @@ namespace {
   /**
    * An algorithm to enumerate stable extensions
    */
-  class StableEnumerator {
+  class StableEnumerator : HeuristicAlgorithm {
 
     const AttackRelation &ar;
     const int n;
 
-    labelling_t labels;
-    int *pos_range, *neg_range, *agressor_cnt;
     std::stack<int> decisions_index, decisions_arg;
 
   public:
@@ -58,8 +56,7 @@ namespace {
           return false;
       }
       for (arg_t atted : ar.attacked_set(arg)) {
-        if(!set_out(atted, results))
-          return false;
+        set_out(atted, results);
       }
       for (arg_t atted : ar.attacked_set(arg)) {
           if (pos_range[atted] == 1)
@@ -68,7 +65,7 @@ namespace {
                 if (labels[attedatted] == OUT)
                   return false;
                 if (labels[attedatted] == BLANK)
-                  if (!set_in(attedatted, -1, results))
+                  if (!set_in(attedatted, indices::BACKTRACK, results))
                     return false;
               }
             }
@@ -80,32 +77,31 @@ namespace {
       return true;
     }
 
-    bool set_out (arg_t arg, ExtensionCollector &results, int index = -1) {
+    bool set_out (arg_t arg, ExtensionCollector &results, int index = indices::BACKTRACK) {
       if (labels[arg] & BLANK) {
         labels[arg] = labels::OUT;
         decisions_index.push(index);
         decisions_arg.push(arg);
       }
-      if ( pos_range[arg] == 0 ) {
-        int candidate_cnt = 0;
-        arg_t candidate = -1;
-        for (arg_t atteratter : ar.attacker_set(arg)) {
-          if (labels[atteratter] != OUT
-              && pos_range[atteratter] == 0
-              && neg_range[atteratter] == 0) {
-            candidate_cnt ++;
-            candidate = atteratter;
-            if (candidate_cnt == 2)
-              break;
-          }
+      if ( pos_range[arg] != 0 )
+        return true;
+      int candidate_cnt = 0;
+      arg_t candidate = -1;
+      for (arg_t atteratter : ar.attacker_set(arg)) {
+        if (labels[atteratter] != OUT
+            && pos_range[atteratter] == 0
+            && neg_range[atteratter] == 0) {
+          candidate_cnt ++;
+          candidate = atteratter;
+          if (candidate_cnt == 2)
+            break;
         }
-        if (candidate_cnt == 0) {
-          return false;
-        }
-       if (candidate_cnt == 1) {
-          if (!set_in(candidate, -1, results))
-            return false;
-        }
+      }
+      if (candidate_cnt == 0) {
+        return false;
+      }
+      if (candidate_cnt == 1) {
+        return set_in(candidate, indices::BACKTRACK, results);
       }
       return true;
     }
@@ -130,7 +126,7 @@ namespace {
 
       for (arg_t arg : GroundedSolver().find_ext(ar)) {
           if(labels[arg] == BLANK ) {
-            if (!set_in(arg, -2, results))
+            if (!set_in(arg, indices::STOP, results))
               return;
           } else if (labels[arg] == OUT)
             return;
@@ -138,7 +134,7 @@ namespace {
 
       for (arg_t arg : ar.self_attacker_set()) {
         if (labels[arg] == BLANK) {
-            if(!set_out(arg, results, -2))
+            if(!set_out(arg, results, indices::STOP))
               return;
         } else if (labels[arg] == IN)
           return;
@@ -147,7 +143,7 @@ namespace {
       while (true) {
 
        if (++index < n) {
-          arg_t arg = heuristic.get(index, nullptr);
+          arg_t arg = heuristic.get(index, *this);
           if (labels[arg] & BLANK) {
               if (!set_in(arg, index, results))
                 goto backtrack;
@@ -165,7 +161,7 @@ namespace {
           arg_t arg = decisions_arg.top();
           decisions_index.pop();
           decisions_arg.pop();
-          if (index == -2)
+          if (index == indices::STOP)
             break;
           if (labels[arg] == IN) {
             for (arg_t a : ar.attacker_set(arg)) {
@@ -180,7 +176,7 @@ namespace {
             }
           }
           labels[arg] = BLANK;
-          if (index == -1 || !set_out(arg, results)) {
+          if (index == indices::BACKTRACK || !set_out(arg, results)) {
             goto backtrack;
           }
       }
@@ -205,7 +201,7 @@ bool StableSolver::justify (const AttackRelation &ar, arg_t arg, bool sceptical)
     if(!enumerator.set_out(arg, results))
       return results.is_justified();
   } else {
-    if(!enumerator.set_in(arg, -2, results))
+    if(!enumerator.set_in(arg, indices::STOP, results))
       return results.is_justified();
   }
   enumerator.enumStable(heuristic, results);
