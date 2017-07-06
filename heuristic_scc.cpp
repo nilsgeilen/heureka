@@ -58,7 +58,7 @@ std::vector<int> compute_sccs(const AttackRelation &ar) {
 
 OrderedSCCHeuristic::OrderedSCCHeuristic(const AttackRelation&ar) : Heuristic()  {
   TarjansAlgorithm t(ar) ;
-  std::unordered_map<int, int> scc_size;
+  /*std::unordered_map<int, int> scc_size;
   for (int i : t.root) {
     if (scc_size.count(i) == 0)
       scc_size[i] = 1;
@@ -73,11 +73,31 @@ OrderedSCCHeuristic::OrderedSCCHeuristic(const AttackRelation&ar) : Heuristic() 
   });
   std::unordered_map<int, int> new_scc_id;
   for (int i = 0; i < sccs.size(); i++)
-    new_scc_id[sccs[i].first] = i;
+    new_scc_id[sccs[i].first] = i;*/
 
   //std::cerr << "# of sccs:" << new_scc_id.size();
 
+  std::unordered_map<int, int> sccs;
+  int id = 0;
+
+  for (int i : t.root) {
+    if (!sccs.count(i))
+      sccs[i] = ++id;
+  }
+
+  for (arg_t atter = 0; atter < ar.arg_cnt; atter ++) {
+    for (arg_t atted : ar.attacked_set(atter)) {
+      const int root_a = t.root[atter], root_b = t.root[atted];
+      if (sccs[root_a] < sccs[root_b]) {
+        int temp = sccs[root_a];
+        sccs[root_a] = sccs[root_b];
+        sccs[root_b] = temp;
+      }
+    }
+  }
+
+
   for (int i = 0 ; i< ar.arg_cnt; i++) {
-    order . push_back ({i, new_scc_id[t.root[i]]});
+    order . push_back ({i, sccs[t.root[i]]});
   }
 }
