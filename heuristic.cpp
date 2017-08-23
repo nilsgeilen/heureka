@@ -29,7 +29,7 @@ Heuristic * parseHeuristic (AAF&aaf, AttackRelation&ar, std::stringstream&source
     delete b;
     return a;
   } else if (name == "scc") {
-    return new OrderedSCCHeuristic {ar};
+    return new SCCHeuristic {ar};
   } else if (name == "deg") {
     float indeg_weight, outdeg_weight;
     if (source >> indeg_weight >> outdeg_weight)
@@ -45,6 +45,11 @@ Heuristic * parseHeuristic (AAF&aaf, AttackRelation&ar, std::stringstream&source
     if (source >> window_size >> weight)
       return new DynamicDegreeHeuristic {ar, window_size, weight};
     else std::cerr << "Fail: Heuristic expects different params: " << name <<std::endl;
+  } else if (name == "dynindegrat" || name == "aggrorrat") {
+    int window_size;
+    if (source >> window_size)
+      return new DynamicDegreeRatioHeuristic {ar, window_size};
+    else std::cerr << "Fail: Heuristic expects different params: " << name <<std::endl;
   } else if (name == "dynoutdeg" || name == "defor") {
     int window_size;
     rational_t weight;
@@ -57,7 +62,13 @@ Heuristic * parseHeuristic (AAF&aaf, AttackRelation&ar, std::stringstream&source
    if (source >> in_depth >> in_alpha >> out_depth >> out_alpha)
      return new PathHeuristic{ar,in_depth , in_alpha , out_depth , out_alpha};
     else std::cerr << "Fail: Heuristic expects different params: " << name <<std::endl;
-  } else if (name == "extdegrat") {
+  } else if (name == "outpath") {
+    return new PathHeuristic{ar,0 , 0 , 5 , 0.25};
+  }else if (name == "inpath") {
+    return new PathHeuristic{ar,3, -0.1 , 0, 0};
+  } else if (name == "pm") {
+    return new PathHeuristic{ar,3, -0.1 , 5, 0.25};
+  }else if (name == "extdegrat") {
     return new ExtendedDegreeRatioHeuristic {ar};
   }else if (name == "ceig") {
     return new EigenHeuristic {aaf, 10};
@@ -188,11 +199,11 @@ rational_t Heuristic::get_max_val() const {
 
 std::ostream& operator <<(std::ostream& stream, const Heuristic& heuristic) {
   for (int i = 0; i < heuristic.order.size(); i++) {
-    stream << heuristic.order[i].first << "\t";
+    stream << heuristic.order[i].first <<  " : " << heuristic.order[i].second << "\n";
   }
-  stream << std::endl;
-  for (int i = 0; i < heuristic.order.size(); i++) {
+//  stream << std::endl;
+  /*for (int i = 0; i < heuristic.order.size(); i++) {
     stream << heuristic.order[i].second << "\t";
-  }
+  }*/
   return stream;
 }

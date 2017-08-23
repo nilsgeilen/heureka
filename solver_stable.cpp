@@ -198,7 +198,7 @@ bool StableSolver::justify (const AttackRelation &ar, arg_t arg, bool sceptical)
   ArgumentJustifier results {arg, sceptical};
   StableEnumerator enumerator {ar};
   if (sceptical) {
-    if(!enumerator.set_out(arg, results))
+    if(!enumerator.set_out(arg, results, indices::STOP))
       return results.is_justified();
   } else {
     if(!enumerator.set_in(arg, indices::STOP, results))

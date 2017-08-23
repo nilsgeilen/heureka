@@ -52,7 +52,7 @@ class CompleteEnumerator : HeuristicAlgorithm {
 
   bool *defended;
   std::stack<int> decisions_index, decisions_arg;
-  int in_cnt = 0, defended_cnt = 0;
+  int in_cnt = 0, defended_cnt = 0;//, out_cnt = 0;
 
   const bool preferred;
   bool poss_max = true;
@@ -138,6 +138,7 @@ public:
   bool set_out (arg_t arg, int index = indices::BACKTRACK) {
     if (labels[arg] & BLANK) {
       labels[arg] = labels::OUT;
+    //  out_cnt ++;
       decisions_index.push(index);
       decisions_arg.push(arg);
     }
@@ -178,7 +179,9 @@ public:
     for (arg_t arg : ar.self_attacker_set()) {
       //no return statement, because of empty set
       if (labels[arg] == BLANK) {
-          if(!set_out(arg, indices::STOP));
+          if(!set_out(arg, indices::STOP)) {
+            //results.report_ext_labelling()
+          }
       }
     }
 
@@ -186,7 +189,7 @@ public:
 
     while (true) {
 
-      if (++index == n) {
+      if ((++index == n)){// || (in_cnt + out_cnt == n)) {
         if (preferred && ! poss_max)
           goto backtrack;
         if (in_cnt != defended_cnt)
@@ -238,7 +241,9 @@ backtrack:
                 defended_cnt --;
             }
         }
-      }
+      } //else if (labels[arg] == OUT) {
+        //out_cnt --;
+      //}
       labels[arg] = BLANK;
       if (index == indices::BACKTRACK || !set_out(arg)) {
         goto backtrack;
@@ -264,7 +269,8 @@ bool CompleteSolver::justify (const AttackRelation &ar, arg_t arg, bool sceptica
   } else {
     ArgumentJustifier results {arg, sceptical};
     CompleteEnumerator enumor(ar);
-  //  enumor.set_must_in(arg, -2);
+    if(!enumor.set_in(arg, indices::STOP))
+      return false;
     enumor.enumComplete(heuristic, results);
     return results.is_justified();
   }
@@ -287,8 +293,8 @@ bool PreferredSolver::justify (const AttackRelation &ar, arg_t arg, bool sceptic
   if (sceptical) {
       //nothing, because maxity
   } else {
-  //  if(!enumor.set_must_in(arg, -2))
-    //  return results.is_justified();
+    if(!enumor.set_in(arg, indices::STOP))
+      return false;
   }
   enumor.enumComplete(heuristic, filter);
   return results.is_justified();

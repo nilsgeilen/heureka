@@ -22,13 +22,13 @@ void SCCTest() {
    {{{0,"a"}, {1,"b"}},{{1,"b"}, {0,"a"}},{{3,"e"}, {0,"a"}}, {{0,"a"}, {3,"e"}}, {{4,"d"}, {2,"c"}}, {{4,"d"}, {5,"f"}}, {{5,"f"}, {4,"d"}}}
  };
 
- std::cerr << aaf << std::endl;
+ //std::cerr << aaf << std::endl;
   AttackRelation ar (aaf);
 
   auto sccs = compute_sccs(ar);
   print(sccs);
 
-  OrderedSCCHeuristic scch {ar};
+  SCCHeuristic scch {ar};
   std::cout << scch << std::endl;
 }
 
@@ -55,7 +55,7 @@ void PowerIterationTest () {
 
 void test() {
 
-// SCCTest();
+ SCCTest();
 
   //PowerIterationTest();
 

@@ -15,10 +15,10 @@ protected:
   int *pos_range, *neg_range, *agressor_cnt;
   std::vector<label_t> labels;
 public:
-  const int *get_aggressor_cnt() const {return agressor_cnt;}
-  const int *get_neg_range() const {return neg_range;}
-  const int *get_pos_range() const {return pos_range;}
-  const std::vector<label_t> &get_labels() const {return labels;}
+  inline const int *get_aggressor_cnt() const {return agressor_cnt;}
+  inline const int *get_neg_range() const {return neg_range;}
+  inline const int *get_pos_range() const {return pos_range;}
+  inline const std::vector<label_t> &get_labels() const {return labels;}
 };
 
 class Heuristic {
@@ -77,6 +77,13 @@ public:
   int get(int from, const HeuristicAlgorithm &algo) override ;
 };
 
+class DynamicDegreeRatioHeuristic : public Heuristic {
+  const int window_size;
+public:
+  DynamicDegreeRatioHeuristic (AttackRelation &ar, int window_size);
+  int get(int from, const HeuristicAlgorithm &algo) override ;
+};
+
 class DefensorHeuristic : public Heuristic {
   AttackRelation &ar;
   const int window_size;
@@ -106,12 +113,8 @@ public:
   int get(int from, const HeuristicAlgorithm &algo) override ;
 };
 
+
 class SCCHeuristic : public Heuristic {
 public:
   SCCHeuristic(const AttackRelation&ar);
-};
-
-class OrderedSCCHeuristic : public Heuristic {
-public:
-  OrderedSCCHeuristic(const AttackRelation&ar);
 };

@@ -1,4 +1,5 @@
 #include "heuristic.h"
+#include "collector.h"
 
 #include <algorithm>
 
@@ -94,6 +95,7 @@ DynamicDegreeHeuristic::DynamicDegreeHeuristic (AttackRelation &ar, int window_s
       order.push_back(std::pair<int,rational_t>(i, 0.0));
 }
 
+
 int DynamicDegreeHeuristic::get(int from, const HeuristicAlgorithm &algo) {
   const int * const adjusted_indegree = algo.get_aggressor_cnt();
   arg_t max_pos = from;
@@ -113,6 +115,34 @@ int DynamicDegreeHeuristic::get(int from, const HeuristicAlgorithm &algo) {
   return order[from].first;
 }
 
+DynamicDegreeRatioHeuristic::DynamicDegreeRatioHeuristic (AttackRelation &ar, int window_size)
+  : window_size(window_size), Heuristic(true) {
+    for (int i = 0; i < ar.arg_cnt; i++)
+      order.push_back(std::pair<int,rational_t>(i, 0.0));
+}
+
+
+int DynamicDegreeRatioHeuristic::get(int from, const HeuristicAlgorithm &algo) {
+  const int * const adjusted_indegree = algo.get_aggressor_cnt();
+  arg_t max_pos = from;
+  rational_t max_val = order[from].second / ((rational_t)adjusted_indegree[from]+1.0);
+  const int window_end = from + window_size;
+  for (int i = from + 1; i < order.size() && i < window_end; i++) {
+    const rational_t val = order[i].second / ((rational_t)adjusted_indegree[i]+1.0);
+    if (val > max_val) {
+      max_pos = i;
+      max_val = val;
+    }
+  }
+  auto temp = order[from];
+  order[from] = order[max_pos];
+  order[max_pos] = temp;
+
+  return order[from].first;
+}
+
+
+
 
 DefensorHeuristic::DefensorHeuristic (AttackRelation &ar, int window_size, rational_t weight)
   : ar(ar), window_size(window_size), weight(weight), Heuristic(true) {
@@ -123,11 +153,14 @@ DefensorHeuristic::DefensorHeuristic (AttackRelation &ar, int window_size, ratio
 int DefensorHeuristic::get(int from, const HeuristicAlgorithm &algo) {
   const int * const neg_range = algo.get_neg_range();
   const int * const pos_range = algo.get_pos_range();
-
+  const auto & labels = algo.get_labels();
   arg_t max_pos = from;
   rational_t max_val = 0.0;
   const int window_end = from + window_size;
   for (int i = from; i < order.size() && i < window_end; i++) {
+    if (labels[i] != labels::BLANK) {
+      continue;
+    }
     rational_t val = order[i].second;
     for (arg_t a : ar.attacked_set(i)) {
       if (neg_range[a] && !pos_range[a])

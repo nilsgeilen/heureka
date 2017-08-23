@@ -77,6 +77,9 @@ int DenseExponentialHeuristic::get(int from, const HeuristicAlgorithm &algo)  {
   rational_t max_val = 0.0;
   const int window_end = from + window_size;
   for (int i = from; i < order.size() && i < window_end; i++) {
+    if (labels[i] != labels::BLANK) {
+      continue;
+    }
     rational_t val = 0.0;
     for (int j = 0; j < order.size(); j++)
       if (labels[j] == labels::IN)

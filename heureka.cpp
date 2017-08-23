@@ -32,7 +32,7 @@ namespace {
 
 int main(int argcnt, char ** args) {
   if (argcnt == 1) {
-    std::cout << "heureka 0.1" << std::endl
+    std::cout << "heureka 0.2" << std::endl
       << "Nils Geilen <geilenn@uni-koblenz.de>" << std::endl
       << "Matthias Thimm <thimm@uni-koblenz.de>" << std::endl;
   } else if (std::string {args[1]} == "--formats") {
@@ -67,6 +67,7 @@ int main(int argcnt, char ** args) {
         param_debug_options = args[i+1];
       }
     }
+
 
     /**
      * infer format from path
@@ -131,13 +132,21 @@ int main(int argcnt, char ** args) {
         heuristic = parseHeuristic(aaf, ar, source);
       } else {
         /**
-         * standard heurstic (0.5*A)^3
+         * standard heurstic (0.25*A)^5
          */
-        heuristic = new PathHeuristic {ar, 0, 0.0, 3, 0.5};
+        if (semantics == "ST") {
+          std::stringstream strstr ("+ * scc 1000 + / + outdeg 1 + indeg 1 /  +  outpath inpath 1000");
+          heuristic = parseHeuristic (aaf, ar, strstr);
+        } else {
+          std::stringstream strstr ("+ * scc 1000 * -1 * outpath inpath");
+          heuristic = parseHeuristic (aaf, ar, strstr);
+        }
       }
-      if (! heuristic)
+      if (! heuristic) {
+        std::cerr << "Fail: heuristic could not be parsed"<< std::endl;
         return 0;
-      if (param_debug_options == "verbose") {
+      }
+      if (param_debug_options == "2") {
         std::cerr << *heuristic << std::endl;
         std::cerr << '[' << heuristic->get_min_val() <<", "<<heuristic->get_max_val()<<']'<<std::endl;
       }
