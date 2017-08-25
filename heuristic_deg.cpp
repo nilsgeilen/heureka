@@ -73,21 +73,6 @@ ExtendedDegreeRatioHeuristic::ExtendedDegreeRatioHeuristic (AttackRelation &ar) 
   delete[] deg_ratio;
 }
 
-WeightedDegreeHeuristic::WeightedDegreeHeuristic (AttackRelation &ar):Heuristic() {
-  const int n = ar.arg_cnt;
-  for (int i = 0; i < n; i++) {
-    rational_t weighted_in_degree = 0.0;
-    for (arg_t atter : ar.attacker_set(i)) {
-      if (ar.indegree(atter) == 0) {
-        weighted_in_degree = - 900000;
-        break;
-      }
-      weighted_in_degree -= 1000.0 / ar.indegree(atter);
-    }
-    order.push_back(std::pair<int,rational_t>(i,
-        weighted_in_degree + (rational_t)ar.outdegree(i)));
-  }
-}
 
 DynamicDegreeHeuristic::DynamicDegreeHeuristic (AttackRelation &ar, int window_size, rational_t weight)
   : window_size(window_size), weight(weight), Heuristic(true) {

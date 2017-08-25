@@ -62,6 +62,8 @@ std::vector<int> GroundedSolver::find_ext(const AttackRelation &ar) {
   return ext;
 }
 
+// Algorithm to find the grounded extension according to Nofal, Atkinson and Dunne (2014)
+// adjusted for justification
 bool GroundedSolver::justify (const AttackRelation &ar, arg_t arg, bool sceptical) {
   using namespace labels;
   std::vector<label_t> labels (ar.arg_cnt, UNDEC);

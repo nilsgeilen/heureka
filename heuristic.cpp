@@ -4,6 +4,7 @@
 #include <sstream>
 #include <algorithm>
 
+
 Heuristic * parseHeuristic (AAF&aaf, AttackRelation&ar, std::stringstream&source) {
   std::string name;
   source >> name;

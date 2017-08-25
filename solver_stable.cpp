@@ -13,12 +13,24 @@ namespace {
    */
   class StableEnumerator : HeuristicAlgorithm {
 
+    /**
+     * The analysed aff as an attack relation
+     */
     const AttackRelation &ar;
+    /**
+     * The size of the argument set
+     */
     const int n;
-
+    /**
+     * Stacks which keep track of all taken decision sin case they have to be reverted
+     */
     std::stack<int> decisions_index, decisions_arg;
 
   public:
+    /**
+     * Creates a new Stable Algorithm
+     * @param ar the underlying AAF as an attack relation
+     */
     StableEnumerator(const AttackRelation &ar)
         : ar(ar), n(ar.arg_cnt) {
       labels = labelling_t(n, BLANK);
@@ -36,6 +48,13 @@ namespace {
       delete[] agressor_cnt;
     }
 
+    /**
+     * Set an arfument label to IN
+     * @param  arg     the argument whose label is to be changes
+     * @param  index   the algorithm step counter
+     * @param  results result builder to which found extensions are reported
+     * @return         false if a stable extension was reached or conflicts occured
+     */
     bool set_in (arg_t arg, int index, ExtensionCollector &results) {
       labels[arg] = IN;
       decisions_index.push(index);
@@ -77,6 +96,13 @@ namespace {
       return true;
     }
 
+    /**
+     * Set an arfument label to OUT
+     * @param  arg     the argument whose label is to be changes
+     * @param  index   the algorithm step counter
+     * @param  results result builder to which found extensions are reported
+     * @return         false if a stable extension was reached or conflicts occured
+     */
     bool set_out (arg_t arg, ExtensionCollector &results, int index = indices::BACKTRACK) {
       if (labels[arg] & BLANK) {
         labels[arg] = labels::OUT;
@@ -120,10 +146,21 @@ namespace {
       return true;
     }
 
+    /**
+     * Lets the algorithm search for stable extensions
+     * @param heuristic a heuirtsic which shall be used
+     * @param results   result collector to which found extensions are reported
+     */
     void enumStable(Heuristic &heuristic, ExtensionCollector &results) {
 
+      /**
+       * Step counter, keeps track of the number of taken decisions
+       */
       int index = -1;
 
+      /**
+       * Iclude the grounded extension
+       */
       for (arg_t arg : GroundedSolver().find_ext(ar)) {
           if(labels[arg] == BLANK ) {
             if (!set_in(arg, indices::STOP, results))
@@ -132,6 +169,9 @@ namespace {
             return;
       }
 
+      /**
+       * Exclude self-attacking arguments
+       */
       for (arg_t arg : ar.self_attacker_set()) {
         if (labels[arg] == BLANK) {
             if(!set_out(arg, results, indices::STOP))
@@ -151,6 +191,9 @@ namespace {
           continue;
         }
   backtrack:
+          /**
+           * Pop labelling changes from the stack until a decision is reverted
+           */
           if (results.is_stopped()) {
             break;
           }
@@ -197,6 +240,11 @@ std::vector<std::vector<int>> StableSolver::enum_exts(const AttackRelation &ar, 
 bool StableSolver::justify (const AttackRelation &ar, arg_t arg, bool sceptical) {
   ArgumentJustifier results {arg, sceptical};
   StableEnumerator enumerator {ar};
+  /**
+   * For sceptical justification only extensions which do not contain the respective
+   * argument are relevant and for credulous justification only those which do not
+   * contain it
+   */
   if (sceptical) {
     if(!enumerator.set_out(arg, results, indices::STOP))
       return results.is_justified();

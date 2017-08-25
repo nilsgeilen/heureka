@@ -46,19 +46,41 @@ using namespace labels;
  */
 class CompleteEnumerator : HeuristicAlgorithm {
 
+  /**
+   * The analysed aff as an attack relation
+   */
   const AttackRelation &ar;
+  /**
+   * The size of the argument set
+   */
   const int n;
 
-
+  /**
+   * Array which lists defended arguments
+   */
   bool *defended;
+  /**
+   * Stacks which keep track of all taken decision sin case they have to be reverted
+   */
   std::stack<int> decisions_index, decisions_arg;
+  /**
+   * Counters which keep track of the the size of the solution and the share of defended_cnt
+   * arguments
+   */
   int in_cnt = 0, defended_cnt = 0;//, out_cnt = 0;
 
+  /**
+   * These fields allow it to adopt the algorithm for preferred semantics
+   */
   const bool preferred;
   bool poss_max = true;
 
 public:
-
+  /**
+   * Creates a new Complete/Preferred Algorithm
+   * @param ar        the AAF given as an attack relation
+   * @param preferred if this is true the algorithm will find only preferred extensions
+   */
   CompleteEnumerator(const AttackRelation &ar, bool preferred = false)
       : ar(ar), n(ar.arg_cnt), preferred(preferred)  {
     labels = labelling_t(n, BLANK);
@@ -78,6 +100,12 @@ public:
     delete[] agressor_cnt;
   }
 
+  /**
+   * Set an arfument label to IN
+   * @param  arg     the argument whose label is to be changes
+   * @param  index   the algorithm step counter
+   * @return         false if conflicts occured
+   */
   bool set_in (arg_t arg, int index) {
     labels[arg] = IN;
     in_cnt ++;
@@ -118,23 +146,15 @@ public:
                 }
               }
         }
-/*    for (arg_t atted : ar.attacked_set(arg)) {
-      if(!set_out(atted))
-        return false;
-        if (pos_range[atted] == 1)
-          for (arg_t attedatted : ar.attacked_set(atted)) {
-           if (agressor_cnt[attedatted] == 0) {
-              if (labels[attedatted] & OUT)
-                return false;
-              if (labels[attedatted] & BLANK)
-                if (!set_must_in(attedatted, -1))
-                  return false;
-            }
-          }
-    }*/
     return true;
   }
 
+  /**
+   * Set an arfument label to OUT
+   * @param  arg     the argument whose label is to be changes
+   * @param  index   the algorithm step counter
+   * @return         false if conflicts occured
+   */
   bool set_out (arg_t arg, int index = indices::BACKTRACK) {
     if (labels[arg] & BLANK) {
       labels[arg] = labels::OUT;
@@ -168,6 +188,9 @@ public:
 
   void enumComplete(Heuristic &heuristic, ExtensionCollector &results) {
 
+    /**
+     * Iclude the grounded extension
+     */
     for (arg_t arg : GroundedSolver().find_ext(ar)) {
       if (labels[arg] == BLANK) {
         if(!set_in(arg, indices::STOP))
@@ -176,6 +199,9 @@ public:
         return;
     }
 
+    /**
+     * Exclude self-attacking arguments
+     */
     for (arg_t arg : ar.self_attacker_set()) {
       //no return statement, because of empty set
       if (labels[arg] == BLANK) {
@@ -185,6 +211,9 @@ public:
       }
     }
 
+    /**
+     * Step counter, keeps track of the number of taken decisions
+     */
     int index = -1;
 
     while (true) {
@@ -197,12 +226,6 @@ public:
         for (int i = 0 ; i < n ; i++) {
           if (neg_range[i] > 0 && pos_range[i] == 0)
            goto backtrack;
-        //  if (neg_range[i] == 0 && pos_range[i] == 0) {
-          //  if (labels[i] == OUT && agressor_cnt[i] == 0)
-            //  goto backtrack;
-            //if (labels[i] == IN && agressor_cnt[i] > 0)
-            //  goto backtrack;
-          //}
         }
         poss_max = false;
         results.report_ext_labelling(labels);
@@ -218,6 +241,9 @@ public:
         continue;
       }
 backtrack:
+      /**
+      *     Pop labelling changes from the stack until a decision is reverted
+        */
       if (decisions_index.empty()) {
         break;
       }

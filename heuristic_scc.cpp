@@ -8,7 +8,7 @@
 #include "AAF.h"
 
 
-
+// implements Tarjan's Algorithm
 class TarjansAlgorithm {
 public:
   std::vector<int> exec() {
