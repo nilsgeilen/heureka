@@ -35,7 +35,7 @@ Heuristics can be constructed out of the following components:
 * **+ a b**, **- a b**, __* a b__, **/ a b** and **^ a b** are mathematical operations in Polish notation
 * **deg in out**, **indeg** and **outdeg** are indegree and outdegree respectively
 * **dynindeg** is the number of attackers not defeated by the current partial extension
-* **path indepth inalpha outdepth outalpha** is based on paths
-* **scc** sorts arguments according to the size of their strongly connected component
-* **eig**
-* **exp**, **exps**
+* **dynoutdeg** is the number of attacks on attackers of the current partial solution
+* **path indepth inalpha outdepth outalpha** is based on paths, **inpath** and **outpath** have preset parameters
+* **scc** sorts arguments according to its strongly connected component, a component is sorted after all compnents it depends on
+
